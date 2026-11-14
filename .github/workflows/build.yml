@@ -1,0 +1,38 @@
+name: Compilar y publicar GO GO PIDIO
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Instalar plataforma de Android
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Compilar APK
+        run: gradle :app:assembleRelease -Pvc=$(( ${{ github.run_number }} + 100 )) -Pvn=1.${{ github.run_number }} --no-daemon
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VC=$(( ${{ github.run_number }} + 100 ))
+          VN=1.${{ github.run_number }}
+          TAG=v$VN
+          NOTES=$(git log -1 --pretty=%s)
+          cp app/build/outputs/apk/release/app-release.apk gogo-pidio.apk
+          jq -n --argjson vc "$VC" --arg vn "$VN" --arg notes "$NOTES" \
+            --arg url "https://github.com/${{ github.repository }}/releases/download/$TAG/gogo-pidio.apk" \
+            '{versionCode: $vc, versionName: $vn, apkUrl: $url, notes: $notes}' > version.json
+          gh release create "$TAG" gogo-pidio.apk version.json \
+            --title "GO GO PIDIO $VN" --notes "$NOTES" --latest
