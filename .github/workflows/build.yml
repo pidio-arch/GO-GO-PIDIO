@@ -23,6 +23,17 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Buscar el proyecto
+        run: |
+          F=$(find . -name settings.gradle.kts -not -path "./.git/*" | head -1)
+          if [ -z "$F" ]; then
+            echo "No se encontró settings.gradle.kts: faltan archivos del proyecto en el repositorio."
+            ls -R | head -50
+            exit 1
+          fi
+          echo "PROJECT_DIR=$(dirname "$F")" >> "$GITHUB_ENV"
+          echo "Proyecto encontrado en: $(dirname "$F")"
+
       - name: Preparar SDK de Android
         run: |
           SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -30,6 +41,7 @@ jobs:
           "$SDKM" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Compilar APK
+        working-directory: ${{ env.PROJECT_DIR }}
         run: gradle :app:assembleRelease -Pvc=$(( ${{ github.run_number }} + 100 )) -Pvn=1.${{ github.run_number }} --no-daemon
 
       - name: Publicar release
@@ -40,7 +52,7 @@ jobs:
           VN=1.${{ github.run_number }}
           TAG=v$VN
           NOTES=$(git log -1 --pretty=%s)
-          cp app/build/outputs/apk/release/app-release.apk gogo-pidio.apk
+          cp "$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk" gogo-pidio.apk
           jq -n --argjson vc "$VC" --arg vn "$VN" --arg notes "$NOTES" \
             --arg url "https://github.com/${{ github.repository }}/releases/download/$TAG/gogo-pidio.apk" \
             '{versionCode: $vc, versionName: $vn, apkUrl: $url, notes: $notes}' > version.json
