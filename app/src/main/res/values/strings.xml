@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GO GO PIDIO</string>
+    <string name="wallpaper_description">Frase fija en el fondo que cambia sola</string>
+    <string name="widget_description">Frase motivacional sin fondo que cambia sola</string>
+</resources>
