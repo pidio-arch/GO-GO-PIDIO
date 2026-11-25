@@ -1,5 +1,7 @@
 name: Compilar y publicar GO GO PIDIO
 
+# Cada vez que se sube un cambio a la rama main, GitHub compila el APK
+# y lo publica como "Release". La app instalada en el celular lo detecta y ofrece actualizar.
 on:
   push:
     branches: [main]
